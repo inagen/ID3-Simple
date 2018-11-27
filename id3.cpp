@@ -48,7 +48,7 @@ id3::header id3::get_id3_header(const std::string& buf) {
 		header.ver_major = buf[3];
 		header.ver_revision = buf[4];
 		header.flags = buf[5];
-		header.size = size_to_uint32(std::bitset<32>(buf.substr(6, 10)));
+		header.size = size_to_uint32(std::bitset<32>(buf.substr(6, 10).c_str()));
 		return header;
 	}
 }
