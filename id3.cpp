@@ -55,7 +55,7 @@ id3::header id3::get_id3_header(const std::string& buf) {
 
 id3::extended_header id3::get_id3_extended_header(const std::string& buf) {
 	auto header = id3::get_id3_header(buf);
-	if(header.flags[1] == 0) {
+	if(!header.flags[1]) {
 		std::cout << "Error: ID3 extended header not found." << std::endl;
 		return id3::extended_header();
 	} else {
@@ -83,7 +83,19 @@ id3::extended_header id3::get_id3_extended_header(const std::string& buf) {
 			exheader.rests.text_field_size = std::bitset<2>(rests.to_string().substr(3, 5)).to_ulong();
 			exheader.rests.image_encoding = rests[5];
 			exheader.rests.image_size = std::bitset<2>(rests.to_string().substr(6, 8)).to_ulong();
+		} else {
+			exheader.is_tag_restrictions = false;
 		}
 		return exheader;
 	}
+}
+
+id3::footer id3::get_footer_from_header(id3::header header) {	
+	id3::footer footer;
+	footer.sig = std::copy(std::begin(header.sig), std::end(header.sig), std::begin(footer.sig));
+	footer.ver_major = header.ver_major;
+	footer.ver_revision = header.ver_revision;
+	footer.flags = header.flags;
+	footer.size = header.size;
+	return footer;
 }
