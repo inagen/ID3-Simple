@@ -47,7 +47,7 @@ std::string read_file(const std::string&);
 bool write_file(const std::string&, const std::string&);
 header get_id3_header(const std::string&);
 extended_header get_id3_extended_header(const std::string&);
-bool get_footer_from_header(std::string&);
+footer get_footer_from_header(const header&);
 
 template<size_t N>
 uint32_t size_to_uint32(std::bitset<N> buf) {

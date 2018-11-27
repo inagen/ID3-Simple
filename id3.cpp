@@ -90,7 +90,7 @@ id3::extended_header id3::get_id3_extended_header(const std::string& buf) {
 	}
 }
 
-id3::footer id3::get_footer_from_header(id3::header header) {	
+id3::footer id3::get_footer_from_header(const id3::header& header) {	
 	id3::footer footer;
 	footer.sig = std::copy(std::begin(header.sig), std::end(header.sig), std::begin(footer.sig));
 	footer.ver_major = header.ver_major;
