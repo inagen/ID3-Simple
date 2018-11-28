@@ -2,8 +2,8 @@
 #include <string>
 #include <bitset>
 #include <stdint.h>
-#include <vector>
 #include <iostream>
+#include <array>
 
 namespace id3 {
 
@@ -45,21 +45,27 @@ struct extended_header {
 
 std::string read_file(const std::string&);
 bool write_file(const std::string&, const std::string&);
+
 header get_id3_header(const std::string&);
 extended_header get_id3_extended_header(const std::string&);
-footer get_footer_from_header(const header&);
 
-template<size_t N>
-uint32_t size_to_uint32(std::bitset<N> buf) {
-	auto res = buf.to_string();
-	int k = 0;
-	for(int i = 0; i < N; i+=8) {
-		res.erase(res.begin()+i-k);
-		k++;  
-	}
-	
-	std::bitset<N/8*7>  bitset(res);
-	return static_cast<uint32_t>(bitset.to_ulong());
+footer get_footer_from_header(const header&);
+void set_footer(const footer&, std::string&);
+
+
+uint64_t decode(const std::string&);
+
+template<unsigned N>
+std::array<uint8_t, N> encode(uint64_t value) {
+    uint64_t result = 0;
+    for (unsigned i = N-1; i < N; --i) {
+        result |= (value & (0x7f << (i*7))) << i;
+    }
+    std::array<uint8_t, N> data = {};
+    for (unsigned i = N-1; i < N; --i) {
+        data[i] = result & (0xff << (i*8));
+    }
+    return data;
 }
 
 }
