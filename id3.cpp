@@ -67,6 +67,20 @@ id3::header id3::get_id3_header(const std::string& buf) {
 	}
 }
 
+void id3::set_header(const id3::header& header, std::string& buf) {
+	std::string string_header;
+	string_header += "ID3";
+	string_header += static_cast<char>(header.ver_major);
+	string_header += static_cast<char>(header.ver_revision);
+	string_header += static_cast<char>(header.flags.to_ulong());
+
+	auto encoded_size = id3::encode<4>(static_cast<uint64_t>(header.size));
+	std::string size(encoded_size.begin(), encoded_size.end());
+	string_header += size;
+
+	buf.insert(0, string_header);
+}
+
 id3::extended_header id3::get_id3_extended_header(const std::string& buf) {
 	auto header = id3::get_id3_header(buf);
 	if(!header.flags[1]) {
@@ -116,11 +130,18 @@ id3::footer id3::get_footer_from_header(const id3::header& header) {
 	return footer;
 }
 
-void id3::set_footer(const id3::footer& footer, std::string& buf) {
+void id3::set_footer(id3::footer& footer, std::string& buf) {
+	if(!footer.flags[3]) {
+		std::bitset<8> flags = buf[5];
+		flags[3] = true;
+		buf[5] = static_cast<uint8_t>(flags.to_ulong());
+		footer.flags[3] = true;
+	}
+
 	buf += "3DI";
 	buf += static_cast<char>(footer.ver_major);
 	buf += static_cast<char>(footer.ver_revision);
-	buf += footer.flags.to_string();
+	buf += static_cast<char>(footer.flags.to_ulong());
 	auto encoded_size = id3::encode<4>(static_cast<uint64_t>(footer.size));
 	std::string size(encoded_size.begin(), encoded_size.end());
 	buf += size;

@@ -47,10 +47,12 @@ std::string read_file(const std::string&);
 bool write_file(const std::string&, const std::string&);
 
 header get_id3_header(const std::string&);
+void set_header(const header&, std::string&);
+
 extended_header get_id3_extended_header(const std::string&);
 
 footer get_footer_from_header(const header&);
-void set_footer(const footer&, std::string&);
+void set_footer(footer&, std::string&);
 
 
 uint64_t decode(const std::string&);
