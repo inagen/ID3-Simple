@@ -24,22 +24,19 @@ struct footer {
 };
 
 struct tag_restrictions {
-	uint8_t tag_size;
+	std::bitset<2> tag_size;
 	bool text_encoding; 	
-	uint8_t text_field_size;
+	std::bitset<2> text_field_size;
 	bool image_encoding;
-	uint8_t image_size;
+	std::bitset<2> image_size;
 };
 
 struct extended_header {
 	uint32_t size;
 	uint8_t number_of_flag_bytes;		
 	std::bitset<8> flags;
-	bool is_an_update;
-	bool is_crc_data;
-	uint8_t crc_data;
-	bool is_tag_restrictions;
-	tag_restrictions rests;	
+	uint64_t crc_data;
+	std::bitset<8> rests;	
 };
 
 
@@ -50,6 +47,7 @@ header get_id3_header(const std::string&);
 void set_header(const header&, std::string&);
 
 extended_header get_id3_extended_header(const std::string&);
+void set_extended_header(const extended_header&, std::string&);
 
 footer get_footer_from_header(const header&);
 void set_footer(footer&, std::string&);

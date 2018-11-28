@@ -91,32 +91,48 @@ id3::extended_header id3::get_id3_extended_header(const std::string& buf) {
 		exheader.size = id3::decode(buf.substr(10, 4));
 		exheader.number_of_flag_bytes = buf[14]; 
 		exheader.flags = buf[15];
-
-		if(exheader.flags[1])
-			exheader.is_an_update = true;
-		else
-			exheader.is_an_update = false;
 		
-		if(exheader.flags[2]) {
-			exheader.is_crc_data = true;
-			id3::decode(buf.substr(16,5));
-		} else {
-			exheader.is_crc_data = false;
-		}
-		if(exheader.flags[3]) {
-			auto i = exheader.is_crc_data ? 5 : 0;
-			exheader.is_tag_restrictions = true;
+		if(exheader.flags[2]) //is CRC data
+			exheader.crc_data = id3::decode(buf.substr(16,5));
+
+		if(exheader.flags[3]) { // is Tag restrictions
+			auto i = exheader.flags[2] ? 5 : 0;
 			std::bitset<8> rests = buf[16+i];
-			exheader.rests.tag_size = std::bitset<2>(rests.to_string().substr(0, 2)).to_ulong();
-			exheader.rests.text_encoding = rests[2];
-			exheader.rests.text_field_size = std::bitset<2>(rests.to_string().substr(3, 2)).to_ulong();
-			exheader.rests.image_encoding = rests[5];
-			exheader.rests.image_size = std::bitset<2>(rests.to_string().substr(6, 2)).to_ulong();
-		} else {
-			exheader.is_tag_restrictions = false;
 		}
+
 		return exheader;
 	}
+}
+
+void id3::set_extended_header(const id3::extended_header& exheader, std::string& buf) {
+	auto header = id3::get_id3_header(buf);
+	auto footer = id3::get_footer_from_header(header);
+	
+	if(header.flags[1] == 0) {
+		header.flags[1] = true;
+		id3::set_header(header, buf);
+		footer.flags[1] = true;
+		id3::set_footer(footer, buf);
+	}
+
+	std::string string_exheader;
+	auto encoded_size = id3::encode<4>(static_cast<uint64_t>(exheader.size));
+	std::string size(encoded_size.begin(),encoded_size.end());
+	string_exheader += size;
+	string_exheader += static_cast<char>(exheader.number_of_flag_bytes);
+	string_exheader += static_cast<char>(exheader.flags.to_ulong());
+	
+	if(exheader.flags[2]) {
+		auto encoded_data = id3::encode<5>(exheader.crc_data);
+		std::string string_data(encoded_data.begin(), encoded_data.end());
+		string_exheader += string_data;
+	} 
+	if(exheader.flags[3]) {
+		string_exheader += static_cast<char>(exheader.rests.to_ulong());
+	}
+
+	buf.insert(buf.begin()+10, string_exheader.begin(), string_exheader.end());
+
 }
 
 id3::footer id3::get_footer_from_header(const id3::header& header) {	
@@ -131,10 +147,10 @@ id3::footer id3::get_footer_from_header(const id3::header& header) {
 }
 
 void id3::set_footer(id3::footer& footer, std::string& buf) {
-	if(!footer.flags[3]) {
-		std::bitset<8> flags = buf[5];
-		flags[3] = true;
-		buf[5] = static_cast<uint8_t>(flags.to_ulong());
+	auto header = id3::get_id3_header(buf);
+	if(!footer.flags[3] || !header.flags[3]) {
+		header.flags[1] = true;
+		id3::set_header(header, buf);
 		footer.flags[3] = true;
 	}
 
