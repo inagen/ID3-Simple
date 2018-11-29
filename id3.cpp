@@ -79,7 +79,7 @@ void id3::set_header(const id3::header& header, std::string& buf) {
 	std::string size(encoded_size.begin(), encoded_size.end());
 	string_header += size;
 
-	buf.insert(0, string_header);
+	buf.replace(0, 10, string_header);
 }
 
 id3::extended_header id3::get_id3_extended_header(const std::string& buf) {
@@ -215,7 +215,6 @@ void id3::set_frame(const id3::frame& frame, std::string& buf) {
 	
 	strframe += frame.flags;
 	strframe += frame.content;
-
 	auto index = 10;
 	if(header.flags[1]) {
 			auto exheader = get_id3_extended_header(buf);
