@@ -6,6 +6,11 @@
 int main() {
 	auto str = id3::read_file("renai.mp3");
 	auto it = str.begin();
-	id3::frame frame = id3::get_next_frame(str, it);
-	std::cout << frame.frame_id << std::endl;
+	char flag1 = char(0);
+	char flag2 = char(0);
+	std::string flags;
+	flags+=static_cast<char>(flag1);
+	flags+=static_cast<char>(flag2);
+	id3::frame frame = id3::make_frame("TALB", "lol", flags);
+	id3::print_frame(frame);
 }

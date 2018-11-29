@@ -51,8 +51,9 @@ footer get_footer_from_header(const header&);
 void set_footer(footer&, std::string&);
 
 frame get_next_frame(const std::string&, std::string::iterator&); 
-void set_frame(const frame&, std::string&);											 
-																	
+void set_frame(const frame&, std::string&);
+frame make_frame(const std::string&, const std::string&, const std::string&);											 
+void print_frame(const frame&);																	
 
 
 uint64_t decode(const std::string&);

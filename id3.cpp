@@ -38,6 +38,7 @@ bool id3::write_file(const std::string& filename, const std::string& buf) {
 }
 
 uint64_t id3::decode(const std::string& data) {
+
 	auto N = data.length();
     uint64_t value = 0;
     for (unsigned i = N-1; i < N; --i) {
@@ -178,12 +179,10 @@ id3::frame id3::get_next_frame(const std::string& buf, std::string::iterator& it
 	id3::frame frame;
 
 	auto frame_id = std::string(it, it+4);
-	std::cout << frame_id << std::endl;
-	std::copy(frame_id.begin(), frame_id.end(), std::begin(frame.frame_id));
+	frame.frame_id = frame_id;
 	it += 4;
 
 	auto size = id3::decode(std::string(it, it+4));
-	std::cout << size << std::endl;
 	frame.size = size;
 	size -= 8;
 	it += 4;
@@ -196,7 +195,7 @@ id3::frame id3::get_next_frame(const std::string& buf, std::string::iterator& it
 	while(size != 0) {
 		content += *it;
 		it++;
-		size--;
+		size -= 1;
 	}
 	frame.content = content;
 	return frame;
@@ -226,3 +225,18 @@ void id3::set_frame(const id3::frame& frame, std::string& buf) {
 	}
 	buf.insert(index, strframe);
 }
+
+void id3::print_frame(const id3::frame& frame) {
+	std::cout << frame.frame_id << ": ";
+	std::cout << frame.content << std::endl; 
+}
+
+id3::frame id3::make_frame(const std::string& id, const std::string& cont, const std::string& flags) {
+	uint32_t size = 4 + 2 + cont.length();
+	id3::frame frame;
+	frame.frame_id= id;
+	frame.flags = flags;
+	frame.content = cont;
+	frame.size = size;
+	return frame;
+}	
