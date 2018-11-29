@@ -50,9 +50,10 @@ void set_extended_header(const extended_header&, std::string&);
 footer get_footer_from_header(const header&);
 void set_footer(footer&, std::string&);
 
-id3::frame get_next_frame(const std::string&, std::string::iterator&); 	//  Use begin iter for 
-																		//  getting 
-																		//	first frame
+frame get_next_frame(const std::string&, std::string::iterator&); 
+void set_frame(const frame&, std::string&);											 
+																	
+
 
 uint64_t decode(const std::string&);
 

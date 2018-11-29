@@ -201,3 +201,28 @@ id3::frame id3::get_next_frame(const std::string& buf, std::string::iterator& it
 	frame.content = content;
 	return frame;
 }
+
+void id3::set_frame(const id3::frame& frame, std::string& buf) {
+	std::string strframe;
+	auto header = get_id3_header(buf);
+
+	strframe += frame.frame_id;
+	auto encoded_size = id3::encode<4>(static_cast<uint64_t>(frame.size));
+	std::string size(encoded_size.begin(), encoded_size.end());
+	
+	strframe += size;
+	header.size += frame.size;
+	set_header(header, buf);
+	
+	strframe += frame.flags;
+	strframe += frame.content;
+
+	auto index = 10;
+	if(header.flags[1]) {
+			auto exheader = get_id3_extended_header(buf);
+			index += 6;
+			index += exheader.flags[2] ? 5 : 0;
+			index += exheader.flags[3] ? 1 : 0;
+	}
+	buf.insert(index, strframe);
+}
