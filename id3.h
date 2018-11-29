@@ -8,7 +8,7 @@
 namespace id3 {
 
 struct header {
-    char sig[3];  			// "ID3" file identifier
+    std::string sig;  			// "ID3" file identifier
 	uint8_t ver_major;		// First byte of ID3v2 version
 	uint8_t ver_revision;	// Second byte of ID3v2 version
 	std::bitset<8> flags; 	// Flags in %abcd0000 format
@@ -16,19 +16,11 @@ struct header {
 };
 
 struct footer {
-    char sig[3];  			// "3DI" file identifier
+    std::string sig; 			// "3DI" file identifier
 	uint8_t ver_major;		// First byte of ID3v2 version
 	uint8_t ver_revision;	// Second byte of ID3v2 version
 	std::bitset<8> flags; 	// Flags in %abcd0000 format
 	uint32_t size; 			// Size
-};
-
-struct tag_restrictions {
-	std::bitset<2> tag_size;
-	bool text_encoding; 	
-	std::bitset<2> text_field_size;
-	bool image_encoding;
-	std::bitset<2> image_size;
 };
 
 struct extended_header {
@@ -39,6 +31,12 @@ struct extended_header {
 	std::bitset<8> rests;	
 };
 
+struct frame {
+	std::string frame_id;
+	uint32_t size;
+	std::string flags;
+	std::string content;
+};
 
 std::string read_file(const std::string&);
 bool write_file(const std::string&, const std::string&);
@@ -52,6 +50,9 @@ void set_extended_header(const extended_header&, std::string&);
 footer get_footer_from_header(const header&);
 void set_footer(footer&, std::string&);
 
+id3::frame get_next_frame(const std::string&, std::string::iterator&); 	//  Use begin iter for 
+																		//  getting 
+																		//	first frame
 
 uint64_t decode(const std::string&);
 

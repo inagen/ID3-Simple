@@ -58,7 +58,7 @@ id3::header id3::get_id3_header(const std::string& buf) {
 		std::cout << "Error: ID3 tag not found." << std::endl;
 		return id3::header();
 	} else {
-		std::copy(std::begin(sig), std::end(sig), std::begin(header.sig));
+		header.sig = sig;
 		header.ver_major = buf[3];
 		header.ver_revision = buf[4];
 		header.flags = buf[5];
@@ -138,7 +138,7 @@ void id3::set_extended_header(const id3::extended_header& exheader, std::string&
 id3::footer id3::get_footer_from_header(const id3::header& header) {	
 	id3::footer footer;
 	std::string sig = "3DI";
-	std::copy(sig.begin(), sig.end(), std::begin(footer.sig));
+	footer.sig = sig;
 	footer.ver_major = header.ver_major;
 	footer.ver_revision = header.ver_revision;
 	footer.flags = header.flags;
@@ -161,4 +161,43 @@ void id3::set_footer(id3::footer& footer, std::string& buf) {
 	auto encoded_size = id3::encode<4>(static_cast<uint64_t>(footer.size));
 	std::string size(encoded_size.begin(), encoded_size.end());
 	buf += size;
-}	
+}
+
+id3::frame id3::get_next_frame(const std::string& buf, std::string::iterator& it) {
+	if (it == buf.begin()) {
+		auto header = get_id3_header(buf);
+		it += 10;
+		if(header.flags[1]) {
+			auto exheader = get_id3_extended_header(buf);
+			it += 6;
+			it += exheader.flags[2] ? 5 : 0;
+			it += exheader.flags[3] ? 1 : 0;
+		}
+	}
+
+	id3::frame frame;
+
+	auto frame_id = std::string(it, it+4);
+	std::cout << frame_id << std::endl;
+	std::copy(frame_id.begin(), frame_id.end(), std::begin(frame.frame_id));
+	it += 4;
+
+	auto size = id3::decode(std::string(it, it+4));
+	std::cout << size << std::endl;
+	frame.size = size;
+	size -= 8;
+	it += 4;
+
+
+	frame.flags = std::string(it, it+2);
+	size -= 2;
+	it += 2;
+	std::string content;
+	while(size != 0) {
+		content += *it;
+		it++;
+		size--;
+	}
+	frame.content = content;
+	return frame;
+}
