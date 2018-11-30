@@ -12,14 +12,7 @@ int main(int argc, char** argv) {
 	if(operation == "-r") {
 		std::string filename = argv[2];
 		std::string file = id3::read_file(filename);
-		auto header = id3::get_id3_header(file);
-		auto it = file.begin();
-		while(it != file.begin() + header.size) {
-			auto frame = id3::get_next_frame(file, it);
-			if(frame.frame_id == "0000")
-				break;
-			id3::print_frame(frame);
-		}
+		auto frames = id3::get_frames(file);
 	}
 
 }

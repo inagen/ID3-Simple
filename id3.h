@@ -6,7 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-
+#include <algorithm>
 
 namespace id3 {
 
@@ -57,6 +57,8 @@ frame get_next_frame(const std::string&, std::string::iterator&);
 void set_frame(const frame&, std::string&);
 frame make_frame(const std::string&, const std::string&, const std::string&);											 
 void print_frame(const frame&);																	
+std::vector<frame> get_frames(std::string&);
+bool is_frame_here(const frame&, std::string&);
 
 template<unsigned N>
 uint64_t decode(const std::string& data) {
@@ -325,6 +327,27 @@ frame make_frame(const std::string& id, const std::string& cont, const std::stri
 	frame.size = size;
 	return frame;
 }	
+
+std::vector<frame> get_frames(std::string& file) {
+	std::vector<frame> frames;
+	auto header = get_id3_header(file);
+	auto it = file.begin();
+	while(it != file.begin() + header.size) {
+		auto frame = id3::get_next_frame(file, it);
+		if(frame.frame_id == "0000")
+			break;
+		frames.push_back(frame);
+	}
+	return frames;
+}
+
+bool is_frame_here(const frame& frame, std::string& file) {
+	auto frames = get_frames(file);
+	auto it = std::find_if(frames.begin(), frames.end(), [=](id3::frame f) -> bool {
+		return f.frame_id == frame.frame_id;
+	});
+	return it != frames.begin();
+}
 
 }
 
