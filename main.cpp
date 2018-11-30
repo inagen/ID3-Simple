@@ -16,6 +16,8 @@ int main(int argc, char** argv) {
 		auto it = file.begin();
 		while(it != file.begin() + header.size) {
 			auto frame = id3::get_next_frame(file, it);
+			if(frame.frame_id == "0000")
+				break;
 			id3::print_frame(frame);
 		}
 	}

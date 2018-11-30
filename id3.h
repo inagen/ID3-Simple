@@ -59,22 +59,29 @@ frame make_frame(const std::string&, const std::string&, const std::string&);
 void print_frame(const frame&);																	
 
 template<unsigned N>
-uint64_t decode(const std::string& ndata) {
-	std::string data(ndata.rbegin(), ndata.rend());
-	std::vector<bool> bites(N);
+uint64_t decode(const std::string& data) {
+	std::vector<bool> bites(N*8);
+
 	auto n = 0;
 	for(int i = 0; i < N; ++i) {
 		std::bitset<8> byte(data[i]);
-		std::cout << byte.to_string(); // LITTLE ENDIAN & BIG ENDIAN
 		for (int j = 0; j < 8; ++j) {
-			bites[j+n] = byte[j];
-			//std::cout << bites[j+n];
+			bites[j+n] = byte[7-j];
 		}
-		std::cout << " ";
 		n += 8;
 	}
-	std::cout << std::endl;
- 	return 0;
+
+	for(auto it = bites.begin(); it != bites.end(); it +=8) {
+		bites.erase(it);
+		it--;
+	}
+
+	bites = std::vector<bool>(bites.rbegin(), bites.rend());
+	std::bitset<N*7> result;
+	for(int i = 0; i < bites.size(); i++) {
+		result[i] = bites[i];
+	}
+	return static_cast<uint64_t>(result.to_ulong());
 }
 
 template<unsigned N>
@@ -237,8 +244,10 @@ void set_footer(footer& footer, std::string& buf) {
 }
 
 frame get_next_frame(const std::string& buf, std::string::iterator& it) {
+	static auto tagsize = 0;
 	if (it == buf.begin()) {
 		auto header = get_id3_header(buf);
+		tagsize = header.size;
 		it += 10;
 		if(header.flags[1]) {
 			auto exheader = get_id3_extended_header(buf);
@@ -247,15 +256,19 @@ frame get_next_frame(const std::string& buf, std::string::iterator& it) {
 			it += exheader.flags[3] ? 1 : 0;
 		}
 	}
-
-	frame frame;
+	id3::frame frame;
+	char kek = static_cast<char>(0);
+	std::string nullstring(32, kek); 
+	if((it - buf.begin() >= tagsize) || std::string(it, it+32) == nullstring) {
+		frame.frame_id = "0000";
+		return frame;
+	}
 
 	auto frame_id = std::string(it, it+4);
 	frame.frame_id = frame_id;
 	it += 4;
 
-	auto size = decode<4>(std::string(it, it+4));
-	std::cout << "Size: " << size << std::endl;
+	auto size = decode<4>(std::string(it, it+4)) + 10;
 	frame.size = size;
 	size -= 8;
 	it += 4;
