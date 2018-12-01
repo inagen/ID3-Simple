@@ -42,23 +42,16 @@ struct frame {
 };
 
 std::string read_file(const std::string&);
-bool write_file(const std::string&, const std::string&);
 
 header get_id3_header(const std::string&);
-void set_header(const header&, std::string&);
 
 extended_header get_id3_extended_header(const std::string&);
-void set_extended_header(const extended_header&, std::string&);
 
 footer get_footer_from_header(const header&);
-void set_footer(footer&, std::string&);
 
-frame get_next_frame(const std::string&, std::string::iterator&); 
-void set_frame(const frame&, std::string&);
-frame make_frame(const std::string&, const std::string&, const std::string&);											 
+frame get_next_frame(const std::string&, std::string::iterator&); 										 
 void print_frame(const frame&);																	
 std::vector<frame> get_frames(std::string&);
-bool is_frame_here(const frame&, std::string&);
 
 template<unsigned N>
 uint64_t decode(const std::string& data) {
@@ -86,20 +79,6 @@ uint64_t decode(const std::string& data) {
 	return static_cast<uint64_t>(result.to_ulong());
 }
 
-template<unsigned N>
-std::vector<uint8_t> encode(uint64_t value) {
-	uint64_t result = 0;
-	for (unsigned i = N-1; i < N; --i) {
-		result |= (value & (0x7f << (i*7))) << i;
-	}
-	std::vector<uint8_t> data(N);
-	for (unsigned i = N-1; i < N; --i) {
-	data[i] = result & (0xff << (i*8));
-	}
-	return data;
-}
-
-
 std::string read_file(const std::string& filename) {
 
 	std::ifstream fin;
@@ -116,22 +95,6 @@ std::string read_file(const std::string& filename) {
 	}
 }
 
-bool write_file(const std::string& filename, const std::string& buf) {
-	std::ofstream fout;
-	fout.open(filename);
-	auto len = filename.length();
-
-	if(!fout.is_open()) {
-		std::cout << "Error: Unable to open file " << filename << std::endl;
-		return 1;
-	} else {
-		fout.write(filename.c_str(), len);
-		fout.close();
-		return 0;
-	}
-}
-
-
 
 header get_id3_header(const std::string& buf) {
 	id3::header header;
@@ -147,20 +110,6 @@ header get_id3_header(const std::string& buf) {
 		header.size = decode<4>(buf.substr(6,4));
 		return header;
 	}
-}
-
-void set_header(const header& header, std::string& buf) {
-	std::string string_header;
-	string_header += "ID3";
-	string_header += static_cast<char>(header.ver_major);
-	string_header += static_cast<char>(header.ver_revision);
-	string_header += static_cast<char>(header.flags.to_ulong());
-
-	auto encoded_size = encode<4>(static_cast<uint64_t>(header.size));
-	std::string size(encoded_size.begin(), encoded_size.end());
-	string_header += size;
-
-	buf.replace(0, 10, string_header);
 }
 
 extended_header get_id3_extended_header(const std::string& buf) {
@@ -186,37 +135,6 @@ extended_header get_id3_extended_header(const std::string& buf) {
 	}
 }
 
-void set_extended_header(const extended_header& exheader, std::string& buf) {
-	auto header = get_id3_header(buf);
-	auto footer = get_footer_from_header(header);
-	
-	if(header.flags[1] == 0) {
-		header.flags[1] = true;
-		set_header(header, buf);
-		footer.flags[1] = true;
-		set_footer(footer, buf);
-	}
-
-	std::string string_exheader;
-	auto encoded_size = encode<4>(static_cast<uint64_t>(exheader.size));
-	std::string size(encoded_size.begin(),encoded_size.end());
-	string_exheader += size;
-	string_exheader += static_cast<char>(exheader.number_of_flag_bytes);
-	string_exheader += static_cast<char>(exheader.flags.to_ulong());
-	
-	if(exheader.flags[2]) {
-		auto encoded_data = encode<5>(exheader.crc_data);
-		std::string string_data(encoded_data.begin(), encoded_data.end());
-		string_exheader += string_data;
-	} 
-	if(exheader.flags[3]) {
-		string_exheader += static_cast<char>(exheader.rests.to_ulong());
-	}
-
-	buf.insert(buf.begin()+10, string_exheader.begin(), string_exheader.end());
-
-}
-
 footer get_footer_from_header(const header& header) {	
 	footer footer;
 	std::string sig = "3DI";
@@ -226,23 +144,6 @@ footer get_footer_from_header(const header& header) {
 	footer.flags = header.flags;
 	footer.size = header.size;
 	return footer;
-}
-
-void set_footer(footer& footer, std::string& buf) {
-	auto header = get_id3_header(buf);
-	if(!footer.flags[3] || !header.flags[3]) {
-		header.flags[1] = true;
-		set_header(header, buf);
-		footer.flags[3] = true;
-	}
-
-	buf += "3DI";
-	buf += static_cast<char>(footer.ver_major);
-	buf += static_cast<char>(footer.ver_revision);
-	buf += static_cast<char>(footer.flags.to_ulong());
-	auto encoded_size = encode<4>(static_cast<uint64_t>(footer.size));
-	std::string size(encoded_size.begin(), encoded_size.end());
-	buf += size;
 }
 
 frame get_next_frame(const std::string& buf, std::string::iterator& it) {
@@ -289,44 +190,10 @@ frame get_next_frame(const std::string& buf, std::string::iterator& it) {
 	return frame;
 }
 
-void set_frame(const frame& frame, std::string& buf) {
-	std::string strframe;
-	auto header = get_id3_header(buf);
-
-	strframe += frame.frame_id;
-	auto encoded_size = encode<4>(static_cast<uint64_t>(frame.size));
-	std::string size(encoded_size.begin(), encoded_size.end());
-	
-	strframe += size;
-	header.size += frame.size;
-	set_header(header, buf);
-	
-	strframe += frame.flags;
-	strframe += frame.content;
-	auto index = 10;
-	if(header.flags[1]) {
-			auto exheader = get_id3_extended_header(buf);
-			index += 6;
-			index += exheader.flags[2] ? 5 : 0;
-			index += exheader.flags[3] ? 1 : 0;
-	}
-	buf.insert(index, strframe);
-}
-
 void print_frame(const frame& frame) {
 	std::cout << frame.frame_id << ": ";
 	std::cout << frame.content << std::endl; 
 }
-
-frame make_frame(const std::string& id, const std::string& cont, const std::string& flags) {
-	uint32_t size = 4 + 2 + cont.length();
-	id3::frame frame;
-	frame.frame_id= id;
-	frame.flags = flags;
-	frame.content = cont;
-	frame.size = size;
-	return frame;
-}	
 
 std::vector<frame> get_frames(std::string& file) {
 	std::vector<frame> frames;
@@ -339,14 +206,6 @@ std::vector<frame> get_frames(std::string& file) {
 		frames.push_back(frame);
 	}
 	return frames;
-}
-
-bool is_frame_here(const frame& frame, std::string& file) {
-	auto frames = get_frames(file);
-	auto it = std::find_if(frames.begin(), frames.end(), [=](id3::frame f) -> bool {
-		return f.frame_id == frame.frame_id;
-	});
-	return it != frames.begin();
 }
 
 }

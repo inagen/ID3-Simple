@@ -4,15 +4,15 @@
 
 
 int main(int argc, char** argv) {
-	if(argc < 3) {
-		std::cout << "Please, enter arguments and filename." << std::endl;
+	if(argc < 2) {
+		std::cout << "Please, enter filename." << std::endl;
 		return 0;
 	}
-	std::string operation = argv[1]; 
-	if(operation == "-r") {
-		std::string filename = argv[2];
-		std::string file = id3::read_file(filename);
-		auto frames = id3::get_frames(file);
-	}
 
+	std::string filename = argv[2];
+	std::string file = id3::read_file(filename);
+	auto frames = id3::get_frames(file);
+	for(int i = 0; i < frames.size(); i++) {
+		id3::print_frame(frames[i]);
+	}
 }
